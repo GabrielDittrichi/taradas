@@ -23,9 +23,14 @@ async function getMassage(slug: string) {
     }
   }`
   // Disable cache to ensure we get fresh data including references
-  const data = await client.fetch(query, { slug }, { cache: 'no-store', next: { revalidate: 0 } })
-  console.log(`[getMassage] Fetched slug: ${slug}, Found: ${!!data}, Therapists: ${data?.therapists?.length || 0}`);
+  const data = await client.fetch(query, { slug })
   return data
+}
+
+export async function generateStaticParams() {
+  const query = `*[_type == "massage"]{ "slug": slug.current }`
+  const slugs = await client.fetch(query)
+  return slugs.map((item: any) => ({ slug: item.slug }))
 }
 
 export default async function MassageDetailsPage({ params }: { params: Promise<{ slug: string }> }) {

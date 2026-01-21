@@ -21,6 +21,12 @@ async function getTherapist(slug: string) {
   return data
 }
 
+export async function generateStaticParams() {
+  const query = `*[_type == "therapist"]{ "slug": slug.current }`
+  const slugs = await client.fetch(query)
+  return slugs.map((item: any) => ({ slug: item.slug }))
+}
+
 export default async function TherapistDetailsPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params
   const therapist = await getTherapist(slug)
