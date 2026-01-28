@@ -3,12 +3,13 @@ import Link from "next/link"
 import { client } from "@/sanity/lib/client"
 import { urlFor } from "@/sanity/lib/image"
 import { FadeIn, FadeInStagger, FadeInItem } from "@/components/ui/motion"
+import type { Image as SanityImage } from "sanity"
 
 interface Therapist {
   _id: string
   name: string
   specialties: string[]
-  image: any
+  image: SanityImage
   slug: { current: string }
 }
 
@@ -32,21 +33,21 @@ export async function Therapists() {
   }
 
   return (
-    <section className="py-8 bg-white text-slate-900 overflow-hidden">
+    <section className="py-8 bg-linear-to-b from-black to-white text-white overflow-hidden">
       <FadeIn className="container mx-auto px-6 mb-16 text-center">
         <p className="text-xs font-medium uppercase tracking-luxury text-gold mb-3">
             EQUIPA
         </p>
-        <h2 className="text-4xl md:text-5xl font-philosopher mb-6 text-slate-900">
+        <h2 className="text-4xl md:text-5xl font-philosopher mb-6 text-white">
           Nossas Terapeutas
         </h2>
-        <p className="text-slate-700 text-lg max-w-2xl mx-auto leading-relaxed">
+        <p className="text-slate-300 text-lg max-w-2xl mx-auto leading-relaxed">
           Profissionais dedicadas a proporcionar uma experiência única de relaxamento e conexão.
         </p>
       </FadeIn>
 
       {/* Carousel Container */}
-      <FadeInStagger className="flex overflow-x-auto pb-12 px-6 gap-8 snap-x snap-mandatory -mx-6 md:mx-0 md:justify-center scroll-smooth scrollbar-hide">
+      <FadeInStagger className="flex overflow-x-auto scroll-smooth pb-12 px-6 gap-8 snap-x snap-mandatory -mx-6 md:mx-0 md:justify-center scrollbar-hide">
         {therapists.map((therapist: Therapist) => {
           // Sanity image object
           const imageUrl = therapist.image ? urlFor(therapist.image).width(600).height(840).url() : ''
@@ -54,7 +55,7 @@ export async function Therapists() {
           return (
             <FadeInItem 
               key={therapist._id} 
-              className="flex-none w-[300px] snap-center group cursor-pointer"
+              className="flex-none w-[300px] snap-center group cursor-pointer transition-transform duration-300 hover:scale-105"
             >
               <Link href={`/terapeutas/${therapist.slug?.current || '#'}`}>
                 <div className="relative h-[420px] w-full overflow-hidden mb-6 bg-slate-100 shadow-lg">
@@ -66,11 +67,11 @@ export async function Therapists() {
                       className="object-cover transition-transform duration-1000 group-hover:scale-110 grayscale-[10%] group-hover:grayscale-0"
                     />
                   )}
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent opacity-60 group-hover:opacity-40 transition-opacity" />
+                  <div className="absolute inset-0 bg-linear-to-t from-black/50 via-transparent to-transparent opacity-60 group-hover:opacity-40 transition-opacity" />
                 </div>
                 <div className="text-center transform transition-transform duration-500 group-hover:-translate-y-2">
-                    <h3 className="text-3xl font-philosopher text-slate-900 mb-2">{therapist.name}</h3>
-                    <p className="text-xs uppercase tracking-luxury text-[#dabe65] font-medium">
+                    <h3 className="text-3xl font-philosopher text-white mb-2">{therapist.name}</h3>
+                    <p className="text-xs uppercase tracking-luxury text-[#ffffff] font-medium">
                       {therapist.specialties ? therapist.specialties.join(" • ") : ""}
                     </p>
                 </div>
