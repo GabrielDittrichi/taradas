@@ -3,21 +3,28 @@ import Link from "next/link"
 import { ArrowRight } from "lucide-react"
 import { client } from "@/sanity/lib/client"
 import { urlFor } from "@/sanity/lib/image"
+import { FALLBACK_THERAPISTS } from "@/data/fallback-data"
 
 async function getTherapists() {
-  const query = `*[_type == "therapist"] | order(name asc) {
-    _id,
-    name,
-    "specialties": specialties[]->title,
-    image,
-    slug
-  }`
-  const data = await client.fetch(query)
-  return data
+  try {
+    const query = `*[_type == "therapist"] | order(name asc) {
+      _id,
+      name,
+      "specialties": specialties[]->title,
+      image,
+      slug
+    }`
+    const data = await client.fetch(query)
+    return data
+  } catch (error) {
+    console.error("Failed to fetch therapists:", error)
+    return []
+  }
 }
 
 export default async function TherapistsPage() {
-  const therapists = await getTherapists()
+  const sanityTherapists = await getTherapists()
+  const therapists = (sanityTherapists && sanityTherapists.length > 0) ? sanityTherapists : FALLBACK_THERAPISTS
 
   return (
     <main className="pt-32 pb-24 bg-white min-h-screen">
@@ -38,7 +45,7 @@ export default async function TherapistsPage() {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-12">
             {therapists.map((therapist: any) => {
-              const imageUrl = therapist.image ? urlFor(therapist.image).url() : null
+              const imageUrl = therapist.image ? urlFor(therapist.image).url() : (therapist.fallbackImage || null)
               
               if (!imageUrl) return null
 

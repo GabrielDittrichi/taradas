@@ -5,24 +5,33 @@ import { urlFor } from "@/sanity/lib/image"
 import { FadeIn, FadeInStagger, FadeInItem } from "@/components/ui/motion"
 import { Calendar, Sparkles, UserCheck, ArrowRight } from "lucide-react"
 
+import { FALLBACK_THERAPISTS } from "@/data/fallback-data"
+
 interface Therapist {
   _id: string
   name: string
   specialties: string[]
   image: any
   slug: { current: string }
+  fallbackImage?: string
 }
 
 async function getTherapists() {
-  return client.fetch<Therapist[]>(
-    `*[_type == "therapist"][0...3] {
-      _id,
-      name,
-      "specialties": specialties[]->title,
-      image,
-      slug
-    }`
-  )
+  try {
+    const data = await client.fetch<Therapist[]>(
+      `*[_type == "therapist"] | order(name asc) {
+        _id,
+        name,
+        "specialties": specialties[]->title,
+        image,
+        slug
+      }`
+    )
+    return data
+  } catch (error) {
+    console.error("Failed to fetch therapists:", error)
+    return []
+  }
 }
 
 const spaceImages = [
@@ -71,7 +80,8 @@ const steps = [
 ]
 
 export default async function AboutPage() {
-  const therapists = await getTherapists()
+  const sanityTherapists = await getTherapists()
+  const therapists = (sanityTherapists && sanityTherapists.length > 0) ? sanityTherapists : FALLBACK_THERAPISTS.slice(0, 3)
 
   return (
     <main className="min-h-screen bg-slate-50 pt-24 pb-16">
@@ -153,8 +163,8 @@ export default async function AboutPage() {
         </FadeIn>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-16">
-          {therapists.map((therapist) => {
-            const imageUrl = therapist.image ? urlFor(therapist.image).width(600).height(840).url() : ''
+          {therapists.map((therapist: any) => {
+            const imageUrl = therapist.image ? urlFor(therapist.image).width(600).height(840).url() : (therapist.fallbackImage || '')
             return (
               <FadeIn key={therapist._id} className="group cursor-pointer">
                 <Link href={`/terapeutas/${therapist.slug?.current || '#'}`}>

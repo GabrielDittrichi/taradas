@@ -4,29 +4,38 @@ import { client } from "@/sanity/lib/client"
 import { urlFor } from "@/sanity/lib/image"
 import { FadeIn, FadeInStagger, FadeInItem } from "@/components/ui/motion"
 import type { Image as SanityImage } from "sanity"
+import { FALLBACK_THERAPISTS } from "@/data/fallback-data"
 
 interface Therapist {
   _id: string
   name: string
   specialties: string[]
-  image: SanityImage
+  image?: SanityImage
   slug: { current: string }
+  fallbackImage?: string
 }
 
 async function getTherapists() {
-  return client.fetch<Therapist[]>(
-    `*[_type == "therapist"] {
-      _id,
-      name,
-      "specialties": specialties[]->title,
-      image,
-      slug
-    }`
-  )
+  try {
+    const data = await client.fetch<Therapist[]>(
+      `*[_type == "therapist"] | order(name asc) {
+        _id,
+        name,
+        "specialties": specialties[]->title,
+        image,
+        slug
+      }`
+    )
+    return data
+  } catch (error) {
+    console.error("Failed to fetch therapists:", error)
+    return []
+  }
 }
 
 export async function Therapists() {
-  const therapists = await getTherapists()
+  const sanityTherapists = await getTherapists()
+  const therapists = (sanityTherapists && sanityTherapists.length > 0) ? sanityTherapists : FALLBACK_THERAPISTS
   
   if (!therapists || therapists.length === 0) {
     return null
@@ -49,8 +58,8 @@ export async function Therapists() {
       {/* Carousel Container */}
       <FadeInStagger className="flex overflow-x-auto scroll-smooth pb-12 px-6 gap-8 snap-x snap-mandatory -mx-6 md:mx-0 md:justify-center scrollbar-hide">
         {therapists.map((therapist: Therapist) => {
-          // Sanity image object
-          const imageUrl = therapist.image ? urlFor(therapist.image).width(600).height(840).url() : ''
+          // Sanity image object or fallback
+          const imageUrl = therapist.image ? urlFor(therapist.image).width(600).height(840).url() : (therapist.fallbackImage || '')
 
           return (
             <FadeInItem 

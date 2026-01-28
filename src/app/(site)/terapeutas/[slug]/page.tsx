@@ -5,26 +5,35 @@ import { ArrowLeft } from "lucide-react"
 import { client } from "@/sanity/lib/client"
 import { urlFor } from "@/sanity/lib/image"
 import { FadeIn, FadeInStagger, FadeInItem } from "@/components/ui/motion"
+import { FALLBACK_THERAPISTS } from "@/data/fallback-data"
 
 async function getTherapist(slug: string) {
-  const query = `*[_type == "therapist" && slug.current == $slug][0] {
-    _id,
-    name,
-    "specialties": specialties[]->title,
-    image,
-    gallery,
-    bio,
-      phone,
-    slug
-  }`
-  const data = await client.fetch(query, { slug })
-  return data
+  try {
+    const query = `*[_type == "therapist" && slug.current == $slug][0] {
+      _id,
+      name,
+      "specialties": specialties[]->title,
+      image,
+      gallery,
+      bio,
+        phone,
+      slug
+    }`
+    const data = await client.fetch(query, { slug })
+    return data
+  } catch (error) {
+    return null
+  }
 }
 
 export async function generateStaticParams() {
-  const query = `*[_type == "therapist"]{ "slug": slug.current }`
-  const slugs = await client.fetch(query)
-  return slugs.map((item: any) => ({ slug: item.slug }))
+  try {
+    const query = `*[_type == "therapist"]{ "slug": slug.current }`
+    const slugs = await client.fetch(query)
+    return slugs.map((item: any) => ({ slug: item.slug }))
+  } catch (error) {
+    return FALLBACK_THERAPISTS.map(item => ({ slug: item.slug.current }))
+  }
 }
 
 export default async function TherapistDetailsPage({ params }: { params: Promise<{ slug: string }> }) {
@@ -32,6 +41,11 @@ export default async function TherapistDetailsPage({ params }: { params: Promise
   const therapist = await getTherapist(slug)
 
   if (!therapist) {
+    // Check fallback
+    const fallback = FALLBACK_THERAPISTS.find(t => t.slug.current === slug)
+    if (fallback) {
+      return <TherapistDetailView therapist={fallback} />
+    }
      return notFound()
   }
 
@@ -39,7 +53,7 @@ export default async function TherapistDetailsPage({ params }: { params: Promise
 }
 
 function TherapistDetailView({ therapist }: { therapist: any }) {
-  const imageUrl = therapist.image ? urlFor(therapist.image).url() : null
+  const imageUrl = therapist.image ? urlFor(therapist.image).url() : (therapist.fallbackImage || null)
 
   return (
     <main className="pt-32 pb-24 bg-white min-h-screen">
@@ -97,17 +111,20 @@ function TherapistDetailView({ therapist }: { therapist: any }) {
           <div className="mt-24">
             <h3 className="text-2xl font-serif text-slate-900 mb-8 text-center">Galeria de Fotos</h3>
             <FadeInStagger className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              {therapist.gallery.map((image: any, index: number) => (
+              {therapist.gallery.map((image: any, index: number) => {
+                const imgUrl = image.url || (image.asset ? urlFor(image).url() : null)
+                if (!imgUrl) return null
+                return (
                 <FadeInItem key={image._key || index} className="relative h-[300px] w-full overflow-hidden rounded-sm group cursor-pointer">
                   <Image
-                    src={urlFor(image).url()}
+                    src={imgUrl}
                     alt={`${therapist.name} gallery ${index + 1}`}
                     fill
                     className="object-cover transition-transform duration-700 group-hover:scale-110"
                   />
                   <div className="absolute inset-0 bg-black/20 group-hover:bg-transparent transition-colors" />
                 </FadeInItem>
-              ))}
+              )})}
             </FadeInStagger>
           </div>
         )}
